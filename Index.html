@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mapa Visual de Dolor - v.2.0 Paciente + Vista Clínica</title>
+<style>
+:root{
+  --bg:#f1f5f9;--card:#ffffff;--text:#0f172a;--muted:#64748b;--primary:#2563eb;
+  --primary-soft:#eff6ff;--border:#cbd5e1;--success:#059669;--warning:#d97706;--danger:#dc2626;
+  --purple:#7c3aed;--purple-soft:#f3e8ff;--shadow:0 10px 25px -5px rgba(15,23,42,.08),0 8px 10px -6px rgba(15,23,42,.04);
+  --radius:18px;--safe-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+body{min-height:100dvh}
+button,input,select,textarea{font:inherit} button{touch-action:manipulation}
+.app{max-width:1200px;margin:auto;padding:16px}
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0 14px;background:rgba(241,245,249,.92);backdrop-filter:blur(10px)}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;display:grid;place-items:center;font-weight:900;font-size:20px;box-shadow:0 4px 12px rgba(37,99,235,.3)}
+.brand h1{margin:0;font-size:18px;font-weight:800;letter-spacing:-0.02em}.brand small{display:block;color:var(--muted);font-size:11px;font-weight:600}
+.version-badge{background:#e2e8f0;color:#334155;padding:2px 6px;border-radius:6px;font-size:10px;font-weight:700;margin-left:6px;vertical-align:middle}
+.progress-wrap{width:260px}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px}
+.progress{height:8px;background:#e2e8f0;border-radius:999px;overflow:hidden}
+.progress>div{height:100%;background:var(--primary);width:16%;transition:width .3s ease}
+.layout{display:grid;grid-template-columns:1.08fr .92fr;gap:20px;align-items:start}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.body-card,.panel-card{padding:20px}
+.eyebrow{text-transform:uppercase;letter-spacing:.1em;color:var(--primary);font-size:11px;font-weight:800}
+h2{font-size:22px;line-height:1.2;margin:6px 0 8px;font-weight:800} h3{margin:0}
+p.lead{color:var(--muted);font-size:13.5px;line-height:1.5;margin:0 0 14px}
+.control-row{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+.segmented{display:flex;gap:4px;padding:4px;background:#e2e8f0;border-radius:12px;width:max-content}
+.segmented button{min-height:38px;border:0;background:transparent;padding:6px 14px;border-radius:9px;color:var(--muted);font-weight:700;font-size:12px;cursor:pointer;transition:all .15s ease}
+.segmented button.active{background:#fff;color:var(--text);box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.body-stage{display:flex;justify-content:center;align-items:center;min-height:580px;background:radial-gradient(circle at 50% 30%,#ffffff,#f1f5f9);border:1px solid var(--border);border-radius:16px;overflow:hidden;position:relative;padding:12px}
+.body-svg{width:100%;height:auto;max-width:380px;max-height:550px;display:block;filter:drop-shadow(0 4px 6px rgba(0,0,0,.05))}
+.body-part{fill:#cbd5e1;stroke:#ffffff;stroke-width:1.5;cursor:pointer;transition:all .18s ease;vector-effect:non-scaling-stroke}
+.body-part:hover{fill:#93c5fd;opacity:.9}
+.body-part.selected{fill:var(--primary);filter:drop-shadow(0 0 8px rgba(37,99,235,.5))}
+.body-label{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:rgba(15,23,42,.92);color:#fff;padding:8px 16px;border-radius:999px;font-size:12px;font-weight:700;opacity:0;pointer-events:none;transition:all .2s ease;white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.body-label.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+.step{display:none}.step.active{display:block}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.option{border:1px solid var(--border);border-radius:14px;padding:12px;background:#fff;cursor:pointer;min-height:88px;transition:all .15s ease;display:flex;flex-direction:column;justify-content:center}
+.option:hover{border-color:#93c5fd;background:#f8fafc}
+.option.selected{border-color:var(--primary);background:var(--primary-soft);box-shadow:0 0 0 1px var(--primary)}
+.option .icon{font-size:22px;line-height:1}
+.option strong{display:block;font-size:13px;margin-top:4px;color:var(--text)}
+.option small{display:block;color:var(--muted);font-size:11px;line-height:1.3;margin-top:2px}
+.section-title{font-size:12px;font-weight:800;margin:16px 0 8px;text-transform:uppercase;letter-spacing:.05em;color:#475569}
+.slider-wrap{border:1px solid var(--border);border-radius:14px;padding:14px;background:#f8fafc}
+.slider-row{display:flex;align-items:center;gap:14px}
+input[type=range]{width:100%;accent-color:var(--primary);height:32px;cursor:pointer}
+.score{width:48px;height:48px;border-radius:12px;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-weight:900;font-size:20px;border:1px solid #bfdbfe;flex-shrink:0}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{min-height:38px;border:1px solid var(--border);background:#fff;border-radius:999px;padding:8px 14px;color:#334155;cursor:pointer;font-size:12px;font-weight:600;transition:all .15s ease}
+.chip:hover{border-color:#93c5fd}
+.chip.selected{background:var(--primary-soft);border-color:var(--primary);color:var(--primary)}
+.field{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:#fff;font-size:13px;color:var(--text)}
+.summary-zone,.result-card{background:#f8fafc;border:1px solid var(--border);border-radius:14px;padding:14px;margin:12px 0}
+.triage{display:flex;align-items:flex-start;gap:12px;padding:14px;border-radius:14px}
+.triage .badge{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:#fff;font-weight:900;flex-shrink:0;font-size:18px}
+.triage.green{background:#ecfdf5;border:1px solid #a7f3d0}.triage.green .badge{background:var(--success)}
+.triage.yellow{background:#fffbeb;border:1px solid #fde68a}.triage.yellow .badge{background:var(--warning)}
+.triage.red{background:#fef2f2;border:1px solid #fecaca}.triage.red .badge{background:var(--danger)}
+.triage h3{margin:0 0 4px;font-size:15px;font-weight:800}.triage p{margin:0;color:#475569;font-size:12px;line-height:1.45}
+.doctor-box{white-space:pre-wrap;background:#0f172a;color:#e2e8f0;border-radius:14px;padding:14px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11.5px;line-height:1.5;border:1px solid #1e293b}
+.nav{display:flex;justify-content:space-between;gap:10px;margin-top:20px}
+.btn{min-height:44px;border:0;border-radius:12px;padding:10px 18px;font-weight:700;font-size:13px;cursor:pointer;transition:all .15s ease;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn.secondary{background:#e2e8f0;color:#334155}.btn.secondary:hover{background:#cbd5e1}
+.btn.primary{background:var(--primary);color:#fff;box-shadow:0 4px 12px rgba(37,99,235,.25)}.btn.primary:hover{background:#1d4ed8}.btn.primary:disabled{background:#94a3b8;box-shadow:none;cursor:not-allowed}
+.btn.doctor{background:var(--purple);color:#fff;width:100%;margin-top:12px;box-shadow:0 4px 12px rgba(124,58,237,.25)}.btn.doctor:hover{background:#6d28d9}
+.doctor-section{margin-top:20px;padding-top:20px;border-top:1px solid var(--border)}
+.doctor-header{display:flex;align-items:flex-start;gap:12px;background:var(--purple-soft);border:1px solid #ddd6fe;border-radius:14px;padding:14px}
+.doctor-icon{width:40px;height:40px;border-radius:10px;background:var(--purple);color:#fff;display:grid;place-items:center;font-weight:900;flex-shrink:0;font-size:14px}
+.doctor-header h3{margin:0;font-size:15px;color:#4c1d95}.doctor-header p{margin:4px 0 0;color:#5b21b6;font-size:11.5px;line-height:1.4}
+.clinical-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.clinical-card{border:1px solid var(--border);border-radius:14px;padding:14px;background:#fff}
+.clinical-card h4{margin:0 0 8px;font-size:13px;font-weight:800;color:#334155}.clinical-card p{margin:0;color:var(--muted);font-size:12px;line-height:1.45}
+.diff-table{width:100%;border-collapse:collapse;font-size:11.5px}.diff-table th,.diff-table td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--border);vertical-align:top}.diff-table th{font-size:10.5px;color:var(--muted);text-transform:uppercase;font-weight:800}
+.priority{display:inline-block;border-radius:999px;padding:2px 8px;font-size:10px;font-weight:800}.priority.high{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}.priority.medium{background:#fffbeb;color:#d97706;border:1px solid #fde68a}.priority.low{background:#ecfdf5;color:#059669;border:1px solid #a7f3d0}
+.clinical-list{margin:0;padding-left:16px;color:#334155;font-size:12px;line-height:1.5}
+.note-area{width:100%;min-height:130px;border:1px solid var(--border);border-radius:12px;padding:10px;resize:vertical;color:var(--text);background:#f8fafc;font-family:inherit;font-size:12px}
+.doctor-disclaimer{margin-top:12px;padding:10px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;color:#92400e;font-size:11px;line-height:1.45}
+.mobile-bar{display:none}
+@media(max-width:820px){
+  .app{padding:10px 10px calc(80px + var(--safe-bottom))}.progress-wrap{display:none}.layout{grid-template-columns:1fr;gap:14px}.body-card,.panel-card{padding:14px}.body-stage{min-height:460px}.body-svg{max-width:310px;max-height:460px}.grid2,.clinical-grid{grid-template-columns:1fr}.segmented{width:100%}.segmented button{flex:1}.panel-card .nav{display:none}
+  .mobile-bar{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;gap:10px;padding:10px 12px calc(10px + var(--safe-bottom));background:rgba(255,255,255,.95);border-top:1px solid var(--border);backdrop-filter:blur(10px);box-shadow:0 -4px 12px rgba(0,0,0,.05)}.mobile-bar .btn{flex:1}.mobile-bar .btn[hidden]{display:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">+</div>
+    <div><h1>Mapa Visual de Dolor <span class="version-badge">v.2.0</span></h1><small>Triaje inteligente + Orientación Clínica</small></div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-label"><span id="progressText">Paso 1 de 6</span><span id="progressPct">16%</span></div>
+    <div class="progress"><div id="progressBar"></div></div>
+  </div>
+</div>
+
+<div class="layout">
+<section class="card body-card">
+  <div class="eyebrow">Anatomía Interactiva</div>
+  <h2>¿Dónde sientes el dolor o molestia?</h2>
+  <p class="lead">Selecciona una zona anatómica en la figura. Puedes alternar la vista frontal o posterior.</p>
+  
+  <div class="control-row">
+    <div class="segmented">
+      <button class="profile active" data-profile="adulto">Adulto</button>
+      <button class="profile" data-profile="mujer">Mujer</button>
+      <button class="profile" data-profile="infantil">Infantil</button>
+    </div>
+    <div class="segmented">
+      <button class="view active" data-view="front">Frente</button>
+      <button class="view" data-view="back">Atrás</button>
+    </div>
+  </div>
+
+  <div class="body-stage">
+    <!-- SVG FRONTAL CON ANATOMÍA ANATÓMICAMENTE MEJORADA Y MÁS REALISTA -->
+    <svg id="frontSvg" class="body-svg" viewBox="0 0 300 680" role="img">
+      <!-- Cabeza y Cara -->
+      <path class="body-part" data-region="cabeza" d="M150 18 C128 18 114 34 114 56 C114 74 125 90 138 96 L138 102 L162 102 L162 96 C175 90 186 74 186 56 C186 34 172 18 150 18 Z"/>
+      <!-- Cuello Anterior / Tiroides -->
+      <path class="body-part" data-region="cuello" d="M138 102 L162 102 L168 122 C168 122 159 126 150 126 C141 126 132 122 132 122 Z"/>
+      <!-- Hombros -->
+      <path class="body-part" data-region="hombro_izquierdo" d="M132 122 C120 123 100 128 85 138 C80 142 75 152 72 165 L94 172 C98 160 106 150 124 142 Z"/>
+      <path class="body-part" data-region="hombro_derecho" d="M168 122 C180 123 200 128 215 138 C220 142 225 152 228 165 L206 172 C202 160 194 150 176 142 Z"/>
+      <!-- Pecho / Tórax Superior -->
+      <path class="body-part" data-region="pecho_izquierdo" d="M124 142 L94 172 C98 188 102 208 102 216 L148 216 L148 140 C138 140 128 141 124 142 Z"/>
+      <path class="body-part" data-region="pecho_derecho" d="M176 142 L206 172 C202 188 198 208 198 216 L152 216 L152 140 C162 140 172 141 176 142 Z"/>
+      <!-- Abdomen Epigastrio y Cuadrantes Superiores -->
+      <path class="body-part" data-region="epigastrio_superior" d="M102 216 L198 216 L195 250 L105 250 Z"/>
+      <path class="body-part" data-region="hipocondrio_derecho" d="M150 250 L195 250 L192 285 L150 285 Z"/>
+      <path class="body-part" data-region="hipocondrio_izquierdo" d="M105 250 L150 250 L150 285 L108 285 Z"/>
+      <!-- Abdomen Inferior y Fosas Ilíacas -->
+      <path class="body-part" data-region="fosa_iliaca_derecha" d="M150 285 L192 285 C188 320 178 345 150 350 Z"/>
+      <path class="body-part" data-region="fosa_iliaca_izquierda" d="M108 285 L150 285 L150 350 C122 345 112 320 108 285 Z"/>
+      <path class="body-part" data-region="hipogastrio_ingle" d="M128 348 C140 352 160 352 172 348 L178 382 C162 390 138 390 122 382 Z"/>
+      <!-- Miembros Superiores Izquierdos -->
+      <path class="body-part" data-region="brazo_izquierdo" d="M72 165 L94 172 L86 248 L65 244 Z"/>
+      <path class="body-part" data-region="codo_izquierdo" d="M65 244 L86 248 L82 272 L61 268 Z"/>
+      <path class="body-part" data-region="antebrazo_izquierdo" d="M61 268 L82 272 L72 350 L53 344 Z"/>
+      <path class="body-part" data-region="mano_izquierda" d="M53 344 L72 350 L68 398 C60 405 50 400 45 385 Z"/>
+      <!-- Miembros Superiores Derechos -->
+      <path class="body-part" data-region="brazo_derecho" d="M228 165 L206 172 L214 248 L235 244 Z"/>
+      <path class="body-part" data-region="codo_derecho" d="M235 244 L214 248 L218 272 L239 268 Z"/>
+      <path class="body-part" data-region="antebrazo_derecho" d="M239 268 L218 272 L228 350 L247 344 Z"/>
+      <path class="body-part" data-region="mano_derecha" d="M247 344 L228 350 L232 398 C240 405 250 400 255 385 Z"/>
+      <!-- Miembros Inferiores Izquierdos -->
+      <path class="body-part" data-region="muslo_izquierdo" d="M106 342 C122 348 138 350 142 384 L132 505 C116 505 100 495 94 480 C92 420 96 370 106 342 Z"/>
+      <path class="body-part" data-region="rodilla_izquierda" d="M98 505 L132 505 C130 535 128 542 128 542 L98 542 Z"/>
+      <path class="body-part" data-region="pierna_izquierda" d="M98 542 L128 542 L120 625 L96 623 Z"/>
+      <path class="body-part" data-region="pie_izquierdo" d="M96 623 L120 625 L126 652 C110 665 80 665 76 655 Z"/>
+      <!-- Miembros Inferiores Derechos -->
+      <path class="body-part" data-region="muslo_derecho" d="M194 342 C178 348 162 350 158 384 L168 505 C184 505 200 495 206 480 C208 420 204 370 194 342 Z"/>
+      <path class="body-part" data-region="rodilla_derecha" d="M202 505 L168 505 C170 535 172 542 172 542 L202 542 Z"/>
+      <path class="body-part" data-region="pierna_derecha" d="M202 542 L172 542 L180 625 L204 623 Z"/>
+      <path class="body-part" data-region="pie_derecho" d="M204 623 L180 625 L174 652 C190 665 220 665 224 655 Z"/>
+    </svg>
+
+    <!-- SVG POSTERIOR CON ANATOMÍA ANATÓMICAMENTE MEJORADA Y MÁS REALISTA -->
+    <svg id="backSvg" class="body-svg" viewBox="0 0 300 680" role="img" style="display:none">
+      <!-- Cabeza Posterior / Nuca -->
+      <path class="body-part" data-region="cabeza_posterior" d="M150 18 C128 18 114 34 114 56 C114 74 125 90 138 96 L138 102 L162 102 L162 96 C175 90 186 74 186 56 C186 34 172 18 150 18 Z"/>
+      <path class="body-part" data-region="cuello_posterior" d="M138 102 L162 102 L168 122 C158 128 142 128 132 122 Z"/>
+      <!-- Zona Escapular y Dorsal -->
+      <path class="body-part" data-region="escapula_izquierda" d="M132 122 C120 123 100 128 85 138 L94 172 L148 180 L148 126 Z"/>
+      <path class="body-part" data-region="escapula_derecha" d="M168 122 C180 123 200 128 215 138 L206 172 L152 180 L152 126 Z"/>
+      <path class="body-part" data-region="espalda_media_izquierda" d="M94 172 C98 200 102 230 104 250 L148 250 L148 180 Z"/>
+      <path class="body-part" data-region="espalda_media_derecha" d="M206 172 C202 200 198 230 196 250 L152 250 L152 180 Z"/>
+      <!-- Zona Lumbar y Flancos -->
+      <path class="body-part" data-region="lumbar_izquierda" d="M104 250 C106 280 110 310 112 330 L148 330 L148 250 Z"/>
+      <path class="body-part" data-region="lumbar_derecha" d="M196 250 C194 280 190 310 188 330 L152 330 L152 250 Z"/>
+      <!-- Glúteos -->
+      <path class="body-part" data-region="gluteo_izquierdo" d="M112 330 L148 330 L146 405 C125 410 108 390 102 360 Z"/>
+      <path class="body-part" data-region="gluteo_derecho" d="M188 330 L152 330 L154 405 C175 410 192 390 198 360 Z"/>
+      <!-- Brazos Posteriores -->
+      <path class="body-part" data-region="brazo_post_izquierdo" d="M72 165 L94 172 L86 248 L65 244 Z"/>
+      <path class="body-part" data-region="codo_post_izquierdo" d="M65 244 L86 248 L82 272 L61 268 Z"/>
+      <path class="body-part" data-region="antebrazo_post_izquierdo" d="M61 268 L82 272 L72 350 L53 344 Z"/>
+      <path class="body-part" data-region="mano_post_izquierda" d="M53 344 L72 350 L68 398 C60 405 50 400 45 385 Z"/>
+      <path class="body-part" data-region="brazo_post_derecho" d="M228 165 L206 172 L214 248 L235 244 Z"/>
+      <path class="body-part" data-region="codo_post_derecho" d="M235 244 L214 248 L218 272 L239 268 Z"/>
+      <path class="body-part" data-region="antebrazo_post_derecho" d="M239 268 L218 272 L228 350 L247 344 Z"/>
+      <path class="body-part" data-region="mano_post_derecha" d="M247 344 L228 350 L232 398 C240 405 250 400 255 385 Z"/>
+      <!-- Piernas Posteriores -->
+      <path class="body-part" data-region="muslo_post_izquierdo" d="M102 360 L146 405 L134 505 C118 505 102 480 96 440 Z"/>
+      <path class="body-part" data-region="pantorrilla_izquierda" d="M98 505 L132 505 L120 625 L96 623 Z"/>
+      <path class="body-part" data-region="talon_izquierdo" d="M96 623 L120 625 L122 655 C108 662 85 660 80 650 Z"/>
+      <path class="body-part" data-region="muslo_post_derecho" d="M198 360 L154 405 L166 505 C182 505 198 480 204 440 Z"/>
+      <path class="body-part" data-region="pantorrilla_derecha" d="M202 505 L168 505 L180 625 L204 623 Z"/>
+      <path class="body-part" data-region="talon_derecho" d="M204 623 L180 625 L178 655 C192 662 215 660 220 650 Z"/>
+    </svg>
+    <div id="bodyLabel" class="body-label"></div>
+  </div>
+</section>
+
+<aside class="card panel-card">
+  <!-- PASO 1 -->
+  <div class="step active" data-step="1">
+    <div class="eyebrow">Paso 1</div>
+    <h2>Selecciona la ubicación</h2>
+    <div class="summary-zone" id="zoneSummary">
+      <strong>Aún no has seleccionado ninguna zona.</strong>
+      <div style="color:var(--muted);margin-top:6px;font-size:12.5px">Toca cualquier región del modelo corporal para comenzar.</div>
+    </div>
+    <div class="nav"><span></span><button class="btn primary" id="to2" disabled>Continuar →</button></div>
+  </div>
+
+  <!-- PASO 2 -->
+  <div class="step" data-step="2">
+    <div class="eyebrow">Paso 2</div>
+    <h2>Profundidad y Extensión</h2>
+    <div class="grid2" id="depthOptions">
+      <div class="option" data-value="superficial"><div class="icon">🖐️</div><strong>Superficial</strong><small>Piel, roce o hipersensibilidad al tacto.</small></div>
+      <div class="option" data-value="muscular"><div class="icon">💪</div><strong>Músculo / Tendón</strong><small>Aumenta al mover, estirar o contraer.</small></div>
+      <div class="option" data-value="articular"><div class="icon">🦴</div><strong>Hueso / Articulación</strong><small>Dolor articular focal, rigidez o apoyo.</small></div>
+      <div class="option" data-value="visceral"><div class="icon">🫀</div><strong>Visceral / Profundo</strong><small>Sensación profunda, difusa o no bien delimitada.</small></div>
+      <div class="option" data-value="irradiado"><div class="icon">⚡</div><strong>Irradiado / Nervioso</strong><small>Se corre hacia otra parte del cuerpo o extremidad.</small></div>
+    </div>
+    <div class="nav"><button class="btn secondary back">← Atrás</button><button class="btn primary next" disabled>Continuar →</button></div>
+  </div>
+
+  <!-- PASO 3 -->
+  <div class="step" data-step="3">
+    <div class="eyebrow">Paso 3</div>
+    <h2>Cualidad del dolor</h2>
+    <div class="grid2" id="sensationOptions">
+      <div class="option" data-value="opresivo"><div class="icon">🧱</div><strong>Opresivo / Peso</strong><small>Sensación de aplastamiento o tensión.</small></div>
+      <div class="option" data-value="punzante"><div class="icon">🗡️</div><strong>Punzante / Hincada</strong><small>Punzadas agudas como aguja o cuchillo.</small></div>
+      <div class="option" data-value="urente"><div class="icon">🔥</div><strong>Urente / Quemante</strong><small>Ardor vivo o fuego continuo.</small></div>
+      <div class="option" data-value="pulsatil"><div class="icon">💓</div><strong>Pulsátil / Latido</strong><small>Palpitar continuo al ritmo del pulso.</small></div>
+      <div class="option" data-value="colico"><div class="icon">🌊</div><strong>Tipo Cólico</strong><small>Viene y va en oleadas de intensidad variable.</small></div>
+      <div class="option" data-value="electrico"><div class="icon">⚡</div><strong>Eléctrico / Corrientazo</strong><small>Chispazo o descarga punzante rápida.</small></div>
+      <div class="option" data-value="sordo"><div class="icon">🌑</div><strong>Sordo / Sostenido</strong><small>Molestia constante pero continua.</small></div>
+      <div class="option" data-value="lacerante"><div class="icon">💥</div><strong>Lacerante / Desgarro</strong><small>Sensación de ruptura aguda e intensa.</small></div>
+    </div>
+    <div class="nav"><button class="btn secondary back">← Atrás</button><button class="btn primary next" disabled>Continuar →</button></div>
+  </div>
+
+  <!-- PASO 4 -->
+  <div class="step" data-step="4">
+    <div class="eyebrow">Paso 4</div>
+    <h2>Intensidad y Temporalidad</h2>
+    <div class="section-title">Intensidad en escala (EVA 1-10)</div>
+    <div class="slider-wrap">
+      <div class="slider-row">
+        <input id="intensity" type="range" min="1" max="10" value="5">
+        <div class="score" id="score">5</div>
+      </div>
+    </div>
+    <div class="section-title">¿Desde cuándo se presenta?</div>
+    <select id="duration" class="field">
+      <option value="menos de 2 horas">Menos de 2 horas</option>
+      <option value="entre 2 y 24 horas">Entre 2 y 24 horas</option>
+      <option value="1 a 3 días">1 a 3 días</option>
+      <option value="4 a 7 días">4 a 7 días</option>
+      <option value="1 a 4 semanas">1 a 4 semanas</option>
+      <option value="más de 1 mes (crónico)">Más de 1 mes (Crónico)</option>
+    </select>
+    <div class="section-title">Instauración</div>
+    <div class="chips" id="onsetChips">
+      <button class="chip selected" data-value="progresivo">Progresivo (Lento)</button>
+      <button class="chip" data-value="subito">Súbito (Minutos)</button>
+      <button class="chip" data-value="estallido">En estallido (Instantáneo / Máximo)</button>
+      <button class="chip" data-value="post_trauma">Tras traumatismo / golpe</button>
+    </div>
+    <div class="nav"><button class="btn secondary back">← Atrás</button><button class="btn primary next">Continuar →</button></div>
+  </div>
+
+  <!-- PASO 5 -->
+  <div class="step" data-step="5">
+    <div class="eyebrow">Paso 5</div>
+    <h2>Factores y Síntomas de Alarma</h2>
+    <div class="section-title">Desencadenantes / Agravantes</div>
+    <div class="chips multi" id="triggerChips">
+      <button class="chip" data-value="movimiento">Al mover la zona</button>
+      <button class="chip" data-value="respirar">Al inspirar / respirar</button>
+      <button class="chip" data-value="palpacion">Al presionar / tocar</button>
+      <button class="chip" data-value="comida">Tras comer alimentos</button>
+      <button class="chip" data-value="esfuerzo">Al hacer esfuerzo físico</button>
+      <button class="chip" data-value="reposo">Estando en reposo</button>
+    </div>
+    <div class="section-title">Síntomas Acompañantes (Marque todos los que apliquen)</div>
+    <div class="chips multi" id="symptomChips">
+      <button class="chip" data-value="fiebre">Fiebre / Escalofríos</button>
+      <button class="chip" data-value="disnea">Dificultad para respirar / Falta de aire</button>
+      <button class="chip" data-value="diaforesis">Sudoración fría / Palidez</button>
+      <button class="chip" data-value="syncope">Síncope / Desmayo / Pérdida del conocimiento</button>
+      <button class="chip" data-value="neuro">Pérdida de fuerza / Hormigueo en cara o extremidades</button>
+      <button class="chip" data-value="vomitos">Náuseas / Vómitos incoercibles</button>
+      <button class="chip" data-value="rigidez_nuca">Rigidez de nuca / Molestia a la luz (fotofobia)</button>
+      <button class="chip" data-value="ictericia">Ojos o piel amarillos (Ictericia)</button>
+      <button class="chip" data-value="esfinteres">Pérdida del control de esfínteres (orina/heces)</button>
+      <button class="chip" data-value="ninguno">Ninguno de los anteriores</button>
+    </div>
+    <div class="nav"><button class="btn secondary back">← Atrás</button><button class="btn primary next">Generar Informe →</button></div>
+  </div>
+
+  <!-- PASO 6 -->
+  <div class="step" data-step="6">
+    <div class="eyebrow">Informe de Evaluación v.2.0</div>
+    <h2>Resumen Clínico del Paciente</h2>
+    <div class="result-card">
+      <strong id="resultRegion" style="font-size:16px;color:var(--primary)"></strong>
+      <div style="color:var(--muted);font-size:12.5px;margin-top:6px" id="resultDetails"></div>
+    </div>
+    <div class="result-card">
+      <div id="triageBox" class="triage green">
+        <div class="badge" id="triageIcon">✓</div>
+        <div>
+          <h3 id="triageTitle"></h3>
+          <p id="triageText"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">Anamnesis Estructurada (Para compartir)</div>
+    <div class="doctor-box" id="doctorText"></div>
+    <div class="nav">
+      <button class="btn secondary" id="restart">Reiniciar</button>
+      <button class="btn primary" id="copyDoctor">Copiar Texto</button>
+    </div>
+
+    <button class="btn doctor" id="openDoctorView">👨‍⚕️ Desplegar Vista Médica Avanzada</button>
+
+    <!-- VISTA MÉDICA EXCLUSIVA -->
+    <div id="doctorSection" class="doctor-section" hidden>
+      <div class="doctor-header">
+        <div class="doctor-icon">MD</div>
+        <div>
+          <h3>Panel de Razonamiento Clínico v.2.0</h3>
+          <p>Módulo de orientación para diagnóstico diferencial y triaje prehospitalario basado en algoritmos de sintomatología combinada.</p>
+        </div>
+      </div>
+
+      <div class="clinical-grid">
+        <div class="clinical-card">
+          <h4>SBAR / Resumen Estructurado</h4>
+          <p id="clinicalSummary"></p>
+        </div>
+        <div class="clinical-card">
+          <h4>Banderas Rojas (*Red Flags*)</h4>
+          <p id="clinicalRedFlags"></p>
+        </div>
+      </div>
+
+      <div class="clinical-card" style="margin-top:12px">
+        <h4>Matriz de Diagnóstico Diferencial</h4>
+        <div style="overflow-x:auto">
+          <table class="diff-table">
+            <thead>
+              <tr>
+                <th>Diagnóstico Posible</th>
+                <th>Prioridad</th>
+                <th>Criterios a Favor</th>
+                <th>Estudio Confirmatorio Sugerido</th>
+              </tr>
+            </thead>
+            <tbody id="diffBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="clinical-grid">
+        <div class="clinical-card">
+          <h4>Preguntas Clínicas Adicionales</h4>
+          <ul class="clinical-list" id="questionList"></ul>
+        </div>
+        <div class="clinical-card">
+          <h4>Exploración Física / Dirigida</h4>
+          <ul class="clinical-list" id="examList"></ul>
+        </div>
+      </div>
+
+      <div class="clinical-card" style="margin-top:12px">
+        <h4>Evolución / Nota Médica editable</h4>
+        <textarea class="note-area" id="clinicalNote"></textarea>
+        <button class="btn primary" id="copyClinicalNote" style="margin-top:10px">Copiar Nota Médica</button>
+      </div>
+
+      <div class="doctor-disclaimer">
+        <strong>Aviso Médico Legal:</strong> Esta herramienta apoya la toma de decisiones y el registro clínico. No sustituye la anamnesis directa, la exploración física minuciosa ni el juicio médico profesional. Ante cualquier sospecha de emergencia médica, prima la atención inmediata.
+      </div>
+    </div>
+  </div>
+</aside>
+</div>
+</div>
+
+<div class="mobile-bar">
+  <button class="btn secondary" id="mobileBack" hidden>← Atrás</button>
+  <button class="btn primary" id="mobileNext" disabled>Continuar →</button>
+</div>
+
+<script>
+const state = {
+  profile: 'adulto', view: 'front', region: null, depth: null,
+  sensation: null, intensity: 5, duration: 'menos de 2 horas',
+  onset: 'progresivo', triggers: [], symptoms: []
+};
+
+const labels = {
+  cabeza: 'Región Craneal / Cabeza', cuello: 'Cuello Anterior / Zona Cervical',
+  hombro_izquierdo: 'Hombro Izquierdo', hombro_derecho: 'Hombro Derecho',
+  pecho_izquierdo: 'Pared Torácica / Pecho Izquierdo', pecho_derecho: 'Pared Torácica / Pecho Derecho',
+  epigastrio_superior: 'Epigastrio / Abdomen Superior Central',
+  hipocondrio_derecho: 'Hipocondrio Derecho (Cuadrante Sup. Der.)', hipocondrio_izquierdo: 'Hipocondrio Izquierdo (Cuadrante Sup. Izq.)',
+  fosa_iliaca_derecha: 'Fosa Ilíaca Derecha (Cuadrante Inf. Der.)', fosa_iliaca_izquierda: 'Fosa Ilíaca Izquierda (Cuadrante Inf. Izq.)',
+  hipogastrio_ingle: 'Hipogastrio / Pelvis / Región Inguinal',
+  brazo_izquierdo: 'Brazo Izquierdo', brazo_derecho: 'Brazo Derecho',
+  codo_izquierdo: 'Codo Izquierdo', codo_derecho: 'Codo Derecho',
+  antebrazo_izquierdo: 'Antebrazo Izquierdo', antebrazo_derecho: 'Antebrazo Derecho',
+  mano_izquierda: 'Mano Izquierda', mano_derecha: 'Mano Derecha',
+  muslo_izquierdo: 'Muslo Izquierdo', muslo_derecho: 'Muslo Derecho',
+  rodilla_izquierda: 'Rodilla Izquierda', rodilla_derecha: 'Rodilla Derecha',
+  pierna_izquierda: 'Pierna / Espinilla Izquierda', pierna_derecha: 'Pierna / Espinilla Derecha',
+  pie_izquierdo: 'Pie Izquierdo', pie_derecho: 'Pie Derecho',
+  
+  cabeza_posterior: 'Región Occipital / Nuca', cuello_posterior: 'Cuello Posterior / Cervical Post.',
+  escapula_izquierda: 'Región Escapular / Dorsal Izquierda', escapula_derecha: 'Región Escapular / Dorsal Derecha',
+  espalda_media_izquierda: 'Espalda Media Izquierda', espalda_media_derecha: 'Espalda Media Derecha',
+  lumbar_izquierda: 'Región Lumbar / Flanco Izquierdo', lumbar_derecha: 'Región Lumbar / Flanco Derecho',
+  gluteo_izquierdo: 'Glúteo Izquierdo', gluteo_derecho: 'Glúteo Derecho',
+  brazo_post_izquierdo: 'Brazo Izquierdo Posterior', brazo_post_derecho: 'Brazo Derecho Posterior',
+  codo_post_izquierdo: 'Codo Izquierdo Posterior', codo_post_derecho: 'Codo Derecho Posterior',
+  antebrazo_post_izquierdo: 'Antebrazo Izquierdo Posterior', antebrazo_post_derecho: 'Antebrazo Derecho Posterior',
+  mano_post_izquierda: 'Dorso de Mano Izquierda', mano_post_derecha: 'Dorso de Mano Derecha',
+  muslo_post_izquierdo: 'Muslo Izquierdo Posterior', muslo_post_derecho: 'Muslo Derecho Posterior',
+  pantorrilla_izquierda: 'Pantorrilla / Gemelo Izquierdo', pantorrilla_derecha: 'Pantorrilla / Gemelo Derecho',
+  talon_izquierdo: 'Talón Izquierdo', talon_derecho: 'Talón Derecho'
+};
+
+const depthLabels = {
+  superficial: 'superficial (cutáneo / piel)', muscular: 'músculo-tendinoso',
+  articular: 'osteo-articular', visceral: 'visceral profundo', irradiado: 'neuropático / irradiado'
+};
+
+let currentStep = 1;
+const mobileBack = document.getElementById('mobileBack'), mobileNext = document.getElementById('mobileNext');
+
+function updateMobileBar() {
+  mobileBack.hidden = currentStep === 1 || currentStep === 6;
+  mobileNext.hidden = currentStep === 6;
+  mobileNext.textContent = currentStep === 5 ? 'Generar Informe →' : 'Continuar →';
+  mobileNext.disabled = (currentStep === 1 && !state.region) || (currentStep === 2 && !state.depth) || (currentStep === 3 && !state.sensation);
+}
+
+function setStep(n) {
+  currentStep = Math.max(1, Math.min(6, n));
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.querySelector(`.step[data-step="${currentStep}"]`).classList.add('active');
+  const pct = Math.round(currentStep / 6 * 100);
+  document.getElementById('progressText').textContent = `Paso ${currentStep} de 6`;
+  document.getElementById('progressPct').textContent = `${pct}%`;
+  document.getElementById('progressBar').style.width = pct + '%';
+  if (currentStep === 6) buildResult();
+  updateMobileBar();
+  if (window.innerWidth <= 820) document.querySelector('.panel-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+document.querySelectorAll('.profile').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.profile').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); state.profile = b.dataset.profile;
+});
+
+document.querySelectorAll('.view').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); state.view = b.dataset.view;
+  document.getElementById('frontSvg').style.display = state.view === 'front' ? 'block' : 'none';
+  document.getElementById('backSvg').style.display = state.view === 'back' ? 'block' : 'none';
+});
+
+document.querySelectorAll('.body-part').forEach(part => part.addEventListener('pointerup', e => {
+  e.preventDefault(); document.querySelectorAll('.body-part').forEach(x => x.classList.remove('selected'));
+  part.classList.add('selected'); state.region = part.dataset.region;
+  const name = labels[state.region] || state.region;
+  document.getElementById('bodyLabel').textContent = name;
+  document.getElementById('bodyLabel').classList.add('show');
+  document.getElementById('zoneSummary').innerHTML = `<strong>${name}</strong><div style="color:var(--muted);margin-top:6px;font-size:12.5px">Vista: ${state.view === 'front' ? 'Anterior / Frontal' : 'Posterior'} · Perfil: ${state.profile}</div>`;
+  document.getElementById('to2').disabled = false; updateMobileBar();
+}));
+
+document.getElementById('to2').onclick = () => setStep(2);
+
+function selectableGroup(id, key) {
+  document.querySelectorAll(`#${id} .option`).forEach(o => o.addEventListener('pointerup', e => {
+    e.preventDefault(); document.querySelectorAll(`#${id} .option`).forEach(x => x.classList.remove('selected'));
+    o.classList.add('selected'); state[key] = o.dataset.value;
+    o.closest('.step').querySelector('.next').disabled = false; updateMobileBar();
+  }));
+}
+
+selectableGroup('depthOptions', 'depth'); selectableGroup('sensationOptions', 'sensation');
+document.querySelectorAll('.back').forEach(b => b.onclick = () => setStep(currentStep - 1));
+document.querySelectorAll('.next').forEach(b => b.onclick = () => setStep(currentStep + 1));
+mobileBack.onclick = () => setStep(currentStep - 1);
+mobileNext.onclick = () => { if (!mobileNext.disabled) setStep(currentStep + 1); };
+
+document.getElementById('intensity').oninput = e => {
+  state.intensity = +e.target.value;
+  document.getElementById('score').textContent = state.intensity;
+};
+document.getElementById('duration').onchange = e => state.duration = e.target.value;
+
+document.querySelectorAll('#onsetChips .chip').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#onsetChips .chip').forEach(x => x.classList.remove('selected'));
+  b.classList.add('selected'); state.onset = b.dataset.value;
+});
+
+function multi(id, key) {
+  document.querySelectorAll(`#${id} .chip`).forEach(b => b.onclick = () => {
+    if (id === 'symptomChips' && b.dataset.value === 'ninguno') {
+      document.querySelectorAll(`#${id} .chip`).forEach(x => x.classList.remove('selected'));
+      b.classList.add('selected');
+    } else {
+      const none = document.querySelector(`#${id} .chip[data-value="ninguno"]`);
+      if (none) none.classList.remove('selected');
+      b.classList.toggle('selected');
+    }
+    state[key] = [...document.querySelectorAll(`#${id} .chip.selected`)].map(x => x.dataset.value);
+  });
+}
+multi('triggerChips', 'triggers'); multi('symptomChips', 'symptoms');
+
+// MOTOR DE DIAGNÓSTICO DIFERENCIAL CLÍNICO MEJORADO v.2.0
+function getDifferential() {
+  const r = state.region || ''; const s = state.sensation || ''; const d = [];
+  const add = (name, priority, support, confirm) => d.push({ name, priority, support, confirm });
+
+  if (r.includes('pecho') || r.includes('epigastrio')) {
+    if (s === 'opresivo' || state.intensity >= 7 || state.symptoms.includes('diaforesis') || state.symptoms.includes('disnea')) {
+      add('Síndrome Coronario Agudo (SCA / IAM)', 'high', 'Dolor opresivo/intenso, síntomas vegetativos o disnea asociadas', 'ECG de 12 derivaciones, Troponinas de alta sensibilidad');
+    }
+    if (s === 'lacerante' || state.onset === 'estallido') {
+      add('Disección Aórtica Torácica', 'high', 'Inicio en estallido, cualidad lacerante/desgarro', 'Angio-TC de tórax y aorta');
+    }
+    add('Causa Musculoesquelética / Costocondritis', 'medium', 'Sensación reproducible con palpación o movimiento focal', 'Examen físico, palpación de uniones condrocostales');
+    add('Enfermedad por Reflujo / Gastrointestinal', 'low', 'Dolor urente o epigástrico que puede relacionarse con ingesta', 'Endoscopia digestiva alta / Ensayo terapéutico');
+  } else if (r.includes('hipocondrio_derecho')) {
+    add('Patología Vesicular (Colecistitis / Cólico Biliar)', 'high', 'Dolor en CSD, posible irradiación o relación con comidas grasas', 'Ecografía abdominal superior, Signo de Murphy');
+    add('Hepatopatía / Distensión de Cápsula de Glisson', 'medium', 'Molestia sorda en CSD', 'Perfil hepático, ecografía abdominal');
+  } else if (r.includes('fosa_iliaca_derecha')) {
+    add('Apendicitis Aguda', 'high', 'Localización en FID, dolor progresivo o inicio visceral a focal', 'Ecografía de apéndice / TC Abdomen, hemograma');
+    if (state.profile === 'mujer') add('Patología Anexial / Quiste de Ovario / Ectópico', 'high', 'Dolor agudo pélvico en mujer en edad fértil', 'Ecografía transvaginal, Fracción Beta-hCG');
+  } else if (r.includes('lumbar')) {
+    if (s === 'colico' || state.onset === 'subito') {
+      add('Cólico Renoureteral / Litiasis Renal', 'high', 'Dolor en oleadas, súbito, irradiado a ingle', 'EGO / Sedimento, Ecografía renal o Uro-TC');
+    }
+    if (state.symptoms.includes('esfinteres') || state.symptoms.includes('neuro')) {
+      add('Síndrome de Cola de Caballo / Radiculopatía Aguda', 'high', 'Déficit neurológico o alteración de esfínteres', 'Resonancia Magnética Lumbar urgente');
+    }
+    add('Lumbalgia Mecánica / Espasmo Muscular', 'medium', 'Asociado a movimientos, sobreesfuerzo, palpación focal', 'Evaluación física, maniobra de Lasègue');
+  } else if (r.includes('cabeza')) {
+    if (state.onset === 'estallido' || state.symptoms.includes('rigidez_nuca')) {
+      add('Hemorragia Subaracnoidea / Emergencia Neuro', 'high', 'Cefalea en trueno o con rigidez de nuca', 'TC de cráneo simple + Punción Lumbar si procede');
+    }
+    add('Migraña con/sin Aura', 'medium', 'Cefalea pulsátil, fono/fotofobia asociada', 'Anamnesis clínica, diario de cefaleas');
+    add('Cefalea Tensional', 'low', 'Dolor en banda, opresivo, intensidad leve a moderada', 'Examen físico y de la musculatura pericraneal');
+  } else {
+    add('Síndrome Musculoesquelético Localizado', 'medium', 'Dolor localizado relacionado con esfuerzo o sobreuso', 'Examen físico y palpación dirigida');
+    if (s === 'electrico' || s === 'urente') add('Neuropatía Periférica / Radiculopatía', 'medium', 'Cualidad eléctrica/urente con distribución dermatómica', 'Electromiografía / Estudio de conducción nerviosa');
+  }
+  return d;
+}
+
+function clinicalQuestions() {
+  const q = [];
+  if (state.sensation === 'opresivo') q.push('¿El dolor se extiende hacia la mandíbula, cuello o brazo izquierdo?');
+  if (state.region && state.region.includes('fosa_iliaca')) q.push('¿Ha tenido pérdida del apetito (anorexia) o migración del dolor desde el ombligo?');
+  if (state.region && state.region.includes('lumbar')) q.push('¿Ha notado cambios en el color de la orina (sangre) o ardor al orinar?');
+  q.push('¿Tiene antecedentes médicos relevantes (hipertensión, diabetes, cirugías previa)?');
+  q.push('¿Ha tomado analgésicos para esta molestia y obtuvo alguna mejoría?');
+  return q;
+}
+
+function examSuggestions() {
+  const r = state.region || '', x = ['Constantes vitales completas (TA, FC, FR, Temp, SatO2)', 'Inspección general, palidez y facies de dolor'];
+  if (r.includes('pecho')) x.push('Auscultación cardiopulmonar metódica y palpación de pared torácica');
+  else if (r.includes('hipocondrio') || r.includes('fosa_iliaca') || r.includes('epigastrio')) x.push('Auscultación de ruidos hidroaéreos, palpación superficial y profunda, signos peritoneales (Blumberg, Murphy)');
+  else if (r.includes('lumbar')) x.push('Puño-percusión renal de Giordano, examen neurológico de L4-S1');
+  else if (r.includes('cabeza')) x.push('Examen neurológico par craneal, fondo de ojo y signos meníngeos');
+  else x.push('Evaluación de arcos de movimiento, fuerza muscular y pulsos periféricos');
+  return x;
+}
+
+function buildDoctorView() {
+  const region = labels[state.region] || 'Zona no especificada';
+  const tr = state.triggers.length ? state.triggers.join(', ') : 'Ninguno reportado';
+  const sy = state.symptoms.length ? state.symptoms.join(', ') : 'Ninguno reportado';
+  
+  document.getElementById('clinicalSummary').textContent = `${region}. Dolor tipo ${state.sensation}, intensidad ${state.intensity}/10 (EVA), de origen ${depthLabels[state.depth] || 'no definido'}. Instauración ${state.onset}, duración de ${state.duration}. Factores agravantes: ${tr}. Síntomas acompañantes: ${sy}.`;
+
+  const red = [];
+  if (state.symptoms.includes('disnea')) red.push('Dificultad respiratoria (Disnea)');
+  if (state.symptoms.includes('diaforesis')) red.push('Sudoración profusa / Diaforesis');
+  if (state.symptoms.includes('syncope')) red.push('Síncope / Pérdida de conocimiento');
+  if (state.symptoms.includes('neuro')) red.push('Déficit focal neurosensitivo / motor');
+  if (state.symptoms.includes('rigidez_nuca')) red.push('Signos de irritación meníngea / Rigidez nuca');
+  if (state.symptoms.includes('esfinteres')) red.push('Compromiso de esfínteres');
+  if (state.intensity >= 9) red.push('Dolor severo (EVA >= 9)');
+  
+  document.getElementById('clinicalRedFlags').textContent = red.length ? red.join(' • ') : 'No se identificaron Red Flags explícitas seleccionadas por el paciente.';
+
+  const diff = getDifferential();
+  document.getElementById('diffBody').innerHTML = diff.map(d => `<tr><td><strong>${d.name}</strong></td><td><span class="priority ${d.priority}">${d.priority === 'high' ? 'Alta' : d.priority === 'medium' ? 'Media' : 'Baja'}</span></td><td>${d.support}</td><td>${d.confirm}</td></tr>`).join('');
+  document.getElementById('questionList').innerHTML = clinicalQuestions().map(q => `<li>${q}</li>`).join('');
+  document.getElementById('examList').innerHTML = examSuggestions().map(q => `<li>${q}</li>`).join('');
+
+  document.getElementById('clinicalNote').value = `ANAMNESIS
+Paciente consulta por molestia en ${region.toLowerCase()}. Dolor de carácter ${state.sensation}, intensidad de ${state.intensity}/10 en escala EVA, de profundidad ${depthLabels[state.depth] || 'indefinida'}.
+Inicio: ${state.onset} (${state.duration}).
+Agravantes: ${tr}.
+Síntomas acompañantes: ${sy}.
+
+PLAN INICIAL
+1. Evaluación de signos vitales.
+2. Exploración física orientada a la zona afectada.
+3. Descarte de diagnósticos de prioridad alta según matriz.`;
+}
+
+function buildResult() {
+  const region = labels[state.region] || 'Zona seleccionada';
+  document.getElementById('resultRegion').textContent = region;
+  document.getElementById('resultDetails').textContent = `Carácter: ${state.sensation} · Escala: ${state.intensity}/10 · Tipo: ${depthLabels[state.depth] || 'indefinido'} · Duración: ${state.duration}.`;
+
+  const isRed = state.symptoms.includes('disnea') || state.symptoms.includes('syncope') || state.symptoms.includes('neuro') || state.symptoms.includes('rigidez_nuca') || state.symptoms.includes('esfinteres') || (region.includes('Pecho') && state.intensity >= 7) || state.intensity >= 9 || state.onset === 'estallido';
+  const isYellow = !isRed && (state.intensity >= 6 || state.duration.includes('días') || state.duration.includes('mes') || state.symptoms.includes('fiebre') || state.symptoms.includes('vomitos') || state.onset === 'subito');
+
+  const box = document.getElementById('triageBox');
+  box.className = 'triage ' + (isRed ? 'red' : isYellow ? 'yellow' : 'green');
+  document.getElementById('triageIcon').textContent = isRed ? '🚨' : isYellow ? '⚠️' : '✓';
+  document.getElementById('triageTitle').textContent = isRed ? 'Atención Médica Urgente Requereida' : isYellow ? 'Consulta Médica Recomendada' : 'Manejo Inicial y Observación';
+  document.getElementById('triageText').textContent = isRed ? 'Tus síntomas contienen indicadores de alerta clínica que sugieren la necesidad de una evaluación médica presencial inmediata en un centro de urgencias.' : isYellow ? 'Por la intensidad o persistencia de tus síntomas, es recomendable solicitar una consulta médica para evaluación detallada.' : 'No se detectan señales de alarma inmediata en el reporte. Mantén reposo relativo y consulta si el dolor empeora.';
+
+  const tr = state.triggers.length ? state.triggers.join(', ') : 'ninguno reportado';
+  const sy = state.symptoms.length ? state.symptoms.join(', ') : 'ninguno reportado';
+
+  document.getElementById('doctorText').textContent = `INFORME DEL PACIENTE (Mapa de Dolor v.2.0)
+- Localización: ${region}
+- Profundidad: ${depthLabels[state.depth] || 'No especificada'}
+- Carácter del dolor: ${state.sensation}
+- Intensidad (EVA): ${state.intensity}/10
+- Duración: ${state.duration} (Instauración: ${state.onset})
+- Factores que lo empeoran: ${tr}
+- Síntomas asociados: ${sy}`;
+}
+
+async function copyText(t) {
+  try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(t); return true; } } catch (e) {}
+  try { const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); return ok; } catch (e) { return false; }
+}
+
+document.getElementById('copyDoctor').onclick = async () => {
+  const b = document.getElementById('copyDoctor'), old = b.textContent, ok = await copyText(document.getElementById('doctorText').textContent);
+  b.textContent = ok ? 'Copiado ✓' : 'Error al copiar'; setTimeout(() => b.textContent = old, 1500);
+};
+
+document.getElementById('openDoctorView').onclick = () => {
+  const section = document.getElementById('doctorSection');
+  buildDoctorView(); section.hidden = !section.hidden;
+  document.getElementById('openDoctorView').textContent = section.hidden ? '👨‍⚕️ Desplegar Vista Médica Avanzada' : 'Ocultar Vista Médica';
+  if (!section.hidden) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+document.getElementById('copyClinicalNote').onclick = async () => {
+  const b = document.getElementById('copyClinicalNote'), old = b.textContent, ok = await copyText(document.getElementById('clinicalNote').value);
+  b.textContent = ok ? 'Nota Copiada ✓' : 'Error al copiar'; setTimeout(() => b.textContent = old, 1500);
+};
+
+document.getElementById('restart').onclick = () => location.reload();
+updateMobileBar();
+</script>
+</body>
+</html>
